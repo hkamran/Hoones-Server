@@ -19,7 +19,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
 
 import com.hkamran.hoones.server.Payload;
-import com.hkamran.hoones.server.payloads.Controller;
+import com.hkamran.hoones.server.payloads.Keys;
 import com.hkamran.hoones.server.payloads.Player;
 import com.hkamran.hoones.server.payloads.State;
 
@@ -29,11 +29,13 @@ import com.hkamran.hoones.server.payloads.State;
 public class GameServer {
 
 	private final static Logger log = LogManager.getLogger(GameServer.class);
-	
-	public static Map<Session, Player> players = new HashMap<Session, Player>();
-	public static Player host;
-	public static int counter = 0;
 
+	public static final int SIZE = 2;
+
+	public static Player host;
+	public static Session[] room = new Session[SIZE];
+	public static Map<Session, Player> players = new HashMap<Session, Player>();
+	
 	Status status = Status.PLAYING;
 	
 	public static enum Status {
@@ -42,32 +44,41 @@ public class GameServer {
 	
 	@OnOpen
 	public void OnWebSocketConnect(Session session) {
-		counter++;
-		Player player = new Player(session, counter);
-		players.put(session, player);
-		log.info(String.format("Player %S connected on session %S", counter, session.getId()));
+		
 		session.setMaxIdleTimeout(600000);
 		
-		if (players.size() == 1) {
-			host = player;
-
+		for (int i = 0; i < room.length; i++) {
+			if (room[i] != null) continue;
+			
+			room[i] = session;
+			Player player = new Player(session, i + 1);
+			players.put(session, player);
+			log.info(String.format("Player %S connected on session %S", i + 1, session.getId()));
+	
+	
+			Payload payload = new Payload();
+			payload.type = Payload.Type.PLAYER;
+			payload.data = player;
+			send(session, payload);		
+			break;
+			
 		}
 		
-		Payload payload = new Payload();
-		payload.type = Payload.Type.PLAYER;
-		payload.payload = player;
-		send(session, payload);		
-		
 		if (players.size() > 1) {
-			synchonize();
+			//synchonize();
 		}
 	}
 	
 	@OnClose
 	public void onWebSocketClose(Session session) {
-		counter--;
-		log.info(String.format("Player %d disconnected on session %s ", counter, session.getId()));
 		
+		for (int i = 0; i < room.length; i++) {
+			if (session == room[i]) {
+				log.info(String.format("Player %d disconnected on session %s ", i + 1, session.getId()));
+				room[i] = null;
+				break;
+			}
+		}
 		players.remove(session);
 	}	
 	
@@ -76,8 +87,8 @@ public class GameServer {
 		if (status == Status.SYNC) {
 			if (host != null && host.session == session) {
 				Payload payload = Payload.parseJSON(message);
-				if (payload.payload instanceof State) {
-					State state = (State) payload.payload;
+				if (payload.data instanceof State) {
+					State state = (State) payload.data;
 					if (state.status == State.Status.GET) {
 						state.status = State.Status.UPDATE;
 						broadcast(payload);
@@ -91,8 +102,8 @@ public class GameServer {
 		if (status == Status.WAITING) {
 			//Update player status
 			Payload payload = Payload.parseJSON(message);
-			if (payload.payload instanceof State) {
-				State state = (State) payload.payload;
+			if (payload.data instanceof State) {
+				State state = (State) payload.data;
 				if (state.status == State.Status.WAITING) {
 					Player player = players.get(session);
 					player.status = Player.Status.READY;
@@ -117,26 +128,26 @@ public class GameServer {
 			Payload payload = Payload.parseJSON(message);
 			Player player = players.get(session);
 			
-			if (payload.payload instanceof Controller) {
-				Controller controller = (Controller) payload.payload;
+			if (payload.data instanceof Keys) {
+				Keys controller = (Keys) payload.data;
 				
 				Payload resPayload = new Payload();
-				resPayload.type = Payload.Type.CONTROLLER;
-				resPayload.payload = controller;
+				resPayload.type = Payload.Type.KEYS;
+				resPayload.data = controller;
 				
 				Set<Session> ignoring = new HashSet<Session>();
 				ignoring.add(session);
 				
 				broadcast(payload, ignoring);
-			} else if (payload.payload instanceof State) {
-				State state = (State) payload.payload;
+			} else if (payload.data instanceof State) {
+				State state = (State) payload.data;
 				if (state.status == State.Status.STATUS) {
 					player.cycle = state.cycle;
 					player.count++;
 					
 					Boolean isDesynced = isDesynched();
 					if (isDesynced) {
-						synchonize();
+						//synchonize();
 						return;
 					}
 				}
@@ -197,7 +208,7 @@ public class GameServer {
 		
 		Payload payload = new Payload();
 		payload.type = Payload.Type.SYNCHRONIZE;
-		payload.payload = state;
+		payload.data = state;
 		
 		send(host.session, payload);
 	}

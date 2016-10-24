@@ -2,17 +2,17 @@ package com.hkamran.hoones.server;
 
 import org.json.JSONObject;
 
-import com.hkamran.hoones.server.payloads.Controller;
+import com.hkamran.hoones.server.payloads.Keys;
 import com.hkamran.hoones.server.payloads.Player;
 import com.hkamran.hoones.server.payloads.State;
 
 public class Payload {
 
 	public Type type;
-	public Object payload;
+	public Object data;
 	
 	public static enum Type {
-		SYNCHRONIZE, CONTROLLER, PLAYER, STOP, PLAY, SLOWDOWN
+		SYNCHRONIZE, KEYS, PLAYER, STOP, PLAY, SLOWDOWN
 	}
 	
 	public static Payload STOP() {
@@ -37,12 +37,12 @@ public class Payload {
 		JSONObject json = new JSONObject();
 		json.put("type", type.toString());
 		
-		if (payload instanceof Controller) {
-			json.put("payload", ((Controller) payload).toJSON());
-		} else if (payload instanceof Player) {
-			json.put("payload", ((Player) payload).toJSON());
-		} else if (payload instanceof State) {
-			json.put("payload", ((State) payload).toJSON());
+		if (data instanceof Keys) {
+			json.put("data", ((Keys) data).toJSON());
+		} else if (data instanceof Player) {
+			json.put("data", ((Player) data).toJSON());
+		} else if (data instanceof State) {
+			json.put("data", ((State) data).toJSON());
 		}
 		
 		return json;
@@ -55,9 +55,9 @@ public class Payload {
 		Object result = null;
 		
 		
-		JSONObject jsonObj = json.getJSONObject("payload");
-		if (type == Type.CONTROLLER) {
-			Controller keyStroke = Controller.parseJSON(jsonObj);
+		JSONObject jsonObj = json.getJSONObject("data");
+		if (type == Type.KEYS) {
+			Keys keyStroke = Keys.parseJSON(jsonObj);
 			result = keyStroke;
 		} else if (type == Type.PLAYER) {
 			Player player = Player.parseJSON(jsonObj);
@@ -69,7 +69,7 @@ public class Payload {
 		
 		Payload payload = new Payload();
 		payload.type = type;
-		payload.payload = result;
+		payload.data = result;
 		
 		return payload;
 	}
