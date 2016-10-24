@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d %-5p %C{2} (%F:%L) - %m%n" />
+		</Console>
+	</Appenders>
+	<Loggers>
+		<Logger name="org.littleshoot.proxy" level="OFF" />
+
+		<logger name="com.hkamran.hoones" level="debug" additivity="false">
+			<AppenderRef ref="Console"/>
+		</logger>
+		
+		<logger name="org.slf4j" level="OFF"/>
+
+		<Root level="OFF">
+			<AppenderRef ref="Console"/>
+		</Root>
+	</Loggers>
+</Configuration>
