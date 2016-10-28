@@ -143,8 +143,11 @@ public class GameServer {
 				ignoring.add(session);
 				
 				broadcast(payload, ignoring);
+			} else if (payload.type == Payload.Type.PUT) {
+				log.info("Resynchronizing clients");
+				synchonize();
 			}
-		}
+		 }
 	
 	}	
 	
