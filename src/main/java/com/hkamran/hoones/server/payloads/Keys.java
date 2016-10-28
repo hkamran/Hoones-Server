@@ -7,8 +7,8 @@ import org.json.JSONObject;
 public class Keys {
 	
 	int[] data = new int[] {0, 0, 0, 0, 0, 0, 0, 0};
-	int playerId;
-	int cycle;
+	public int playerId;
+	public int cycle;
 	
 	public Keys(Integer id, Integer cycle) {
 		this.playerId = id;

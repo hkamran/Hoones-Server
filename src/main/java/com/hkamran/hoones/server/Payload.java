@@ -12,7 +12,7 @@ public class Payload {
 	public Object data;
 	
 	public static enum Type {
-		SYNCHRONIZE, KEYS, PLAYER, STOP, PLAY, SLOWDOWN
+		GET, PUT, KEYS, PLAYER, STOP, PLAY, WAITING
 	}
 	
 	public static Payload STOP() {
@@ -62,7 +62,7 @@ public class Payload {
 		} else if (type == Type.PLAYER) {
 			Player player = Player.parseJSON(jsonObj);
 			result = player;
-		} else if (type == Type.SYNCHRONIZE) {
+		} else if (type == Type.GET) {
 			State state = State.parseJSON(jsonObj);
 			result = state;
 		}

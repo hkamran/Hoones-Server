@@ -36,10 +36,10 @@ public class GameServer {
 	public static Session[] room = new Session[SIZE];
 	public static Map<Session, Player> players = new HashMap<Session, Player>();
 	
-	Status status = Status.PLAYING;
+	public static Status status = Status.PLAYING;
 	
 	public static enum Status {
-		SYNC, WAITING, PLAYING
+		SYNCING, WAITING, PLAYING
 	}
 	
 	@OnOpen
@@ -64,8 +64,17 @@ public class GameServer {
 			
 		}
 		
+		host = null;
+		for (int i = 0; i < room.length; i++) {
+			if (room[i] == null)  continue;
+			if (room[i] != null) {
+				host = players.get(room[i]);
+				break;
+			}
+		}
+		
 		if (players.size() > 1) {
-			//synchonize();
+			synchonize();
 		}
 	}
 	
@@ -84,16 +93,14 @@ public class GameServer {
 	
 	@OnMessage
 	public void onWebSocketText(String message, Session session) {
-		if (status == Status.SYNC) {
+		if (status == Status.SYNCING) {
 			if (host != null && host.session == session) {
 				Payload payload = Payload.parseJSON(message);
-				if (payload.data instanceof State) {
-					State state = (State) payload.data;
-					if (state.status == State.Status.GET) {
-						state.status = State.Status.UPDATE;
-						broadcast(payload);
-						status = Status.WAITING;
-					}
+				if (payload.type == Payload.Type.GET) {
+					log.info("Broadcasting state of the host");
+					payload.type = Payload.Type.PUT;
+					broadcast(payload);
+					status = Status.WAITING;
 				}
 			} 
 			return;
@@ -102,12 +109,9 @@ public class GameServer {
 		if (status == Status.WAITING) {
 			//Update player status
 			Payload payload = Payload.parseJSON(message);
-			if (payload.data instanceof State) {
-				State state = (State) payload.data;
-				if (state.status == State.Status.WAITING) {
-					Player player = players.get(session);
-					player.status = Player.Status.READY;
-				}
+			if (payload.type == Payload.Type.WAITING) {
+				Player player = players.get(session);
+				player.status = Player.Status.READY;
 			}
 			
 			//Check if we are all READY!!
@@ -126,10 +130,10 @@ public class GameServer {
 		
 		if (status == Status.PLAYING) {
 			Payload payload = Payload.parseJSON(message);
-			Player player = players.get(session);
 			
-			if (payload.data instanceof Keys) {
+			if (payload.type == Payload.Type.KEYS) {
 				Keys controller = (Keys) payload.data;
+				log.info("Received Keys from " + controller.playerId + " at " + controller.cycle);
 				
 				Payload resPayload = new Payload();
 				resPayload.type = Payload.Type.KEYS;
@@ -139,20 +143,6 @@ public class GameServer {
 				ignoring.add(session);
 				
 				broadcast(payload, ignoring);
-			} else if (payload.data instanceof State) {
-				State state = (State) payload.data;
-				if (state.status == State.Status.STATUS) {
-					player.cycle = state.cycle;
-					player.count++;
-					
-					Boolean isDesynced = isDesynched();
-					if (isDesynced) {
-						//synchonize();
-						return;
-					}
-				}
-				
-				return;
 			}
 		}
 	
@@ -196,19 +186,15 @@ public class GameServer {
 		log.info("Synchronizing players...");
 		
 		broadcast(Payload.STOP());
-		status = Status.SYNC;
+		status = Status.SYNCING;
 		
 		for (Session session : players.keySet()) {
 			Player player = players.get(session);
 			player.status = Player.Status.WAITING;
 		}
 		
-		State state = new State();
-		state.status = State.Status.GET;
-		
 		Payload payload = new Payload();
-		payload.type = Payload.Type.SYNCHRONIZE;
-		payload.data = state;
+		payload.type = Payload.Type.GET;
 		
 		send(host.session, payload);
 	}
