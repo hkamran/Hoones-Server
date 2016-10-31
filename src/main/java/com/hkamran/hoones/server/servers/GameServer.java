@@ -148,8 +148,34 @@ public class GameServer {
 				synchonize();
 			}
 		 }
+
 	
 	}	
+	
+    static String[] say_what_you_see(String[] inputs) {
+        
+        String[] solutions = new String[inputs.length];
+        
+        int k = 0;
+        for (String input : inputs) {
+            StringBuffer solution = new StringBuffer();
+            for (int i = 0; i < input.length(); i++) {
+                char letter = input.charAt(i);
+                //peek
+                int j = i + 1;
+                while (j < input.length() && letter == input.charAt(j)) {
+                    j++;
+                }
+                solution.append((j - i) + "" + letter);
+                i = j - 1;
+            }
+            solutions[k] = solution.toString();
+            k++;
+        }
+        
+        return solutions;	
+
+    }	
 	
 	private Boolean isDesynched() {
 
@@ -220,7 +246,6 @@ public class GameServer {
 			if (ignoring.contains(session)) {
 				continue;
 			}
-			
 			if (session.isOpen()) {
 				try {
 					session.getBasicRemote().sendText(payload.toJSON().toString());
@@ -231,8 +256,60 @@ public class GameServer {
 		}
 	}
 	
+	
+	
 	public Player getPlayer(Session session) {
 		return players.get(session);
+	}
+	
+	
+    static Map<Character, String> patterns = new HashMap<Character, String>();
+
+    static int wordpattern(String pattern, String input) {
+        return patternHelper(pattern, 0, input, 0);
+    }
+
+    static int patternHelper(String pattern, int i, String input, int j) {
+        if (i >= pattern.length() && j >= input.length()) {
+            return 1;
+        } else {
+            if (i >= pattern.length()) return 0;
+            Character letter = pattern.charAt(i);
+            
+            //if we have a mapping then we find one that matches it
+            if (patterns.containsKey(letter)) {
+                String patternStr = patterns.get(letter);
+                StringBuffer subStr = new StringBuffer();
+                for (int k = j; k < input.length(); k++) {
+                    subStr.append(input.charAt(k));
+                    if (subStr.toString().equals(patternStr)) {
+                        int result = patternHelper(pattern, i + 1, input, k + 1);
+                        if (result == 1) {
+                        	return result;
+                        }
+                    }
+                }
+            //create a mapping
+            } else {
+                StringBuffer subStr = new StringBuffer();
+                for (int k = j; k < input.length(); k++) {
+                    subStr.append(input.charAt(k));
+                    patterns.put(letter, subStr.toString());
+                    int result = patternHelper(pattern, i + 1, input, k + 1);
+                    if (result == 1) {
+                        return 1;
+                    }
+                    patterns.remove(letter);
+                }
+            }
+            
+            return 0;
+        }
+    }
+	
+	
+	public static void main(String[] args) {
+		System.out.println("13.37".split("\\.").length);
 	}
 
 }
