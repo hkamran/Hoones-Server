@@ -27,7 +27,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>com.hkamran.mocking.Main</mainClass>
+							<mainClass>com.hkamran.hoones.server.Main</mainClass>
 						</manifest>
 					</archive>
 					<descriptorRefs>
