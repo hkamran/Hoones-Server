@@ -127,6 +127,7 @@ public class GameServer {
 			broadcast(Payload.PLAY());
 			return;
 		}
+	
 		
 		if (status == Status.PLAYING) {
 			Payload payload = Payload.parseJSON(message);
@@ -139,10 +140,8 @@ public class GameServer {
 				resPayload.type = Payload.Type.KEYS;
 				resPayload.data = controller;
 				
-				Set<Session> ignoring = new HashSet<Session>();
-				ignoring.add(session);
-				
-				broadcast(payload, ignoring);
+
+				broadcast(payload);
 			} else if (payload.type == Payload.Type.PUT) {
 				log.info("Resynchronizing clients");
 				synchonize();
@@ -242,15 +241,18 @@ public class GameServer {
 	}
 	
 	public void broadcast(Payload payload, Set<Session> ignoring) {
-		for (Session session: players.keySet()) {	
-			if (ignoring.contains(session)) {
-				continue;
-			}
-			if (session.isOpen()) {
-				try {
-					session.getBasicRemote().sendText(payload.toJSON().toString());
-				} catch (IOException e) {
-					e.printStackTrace();
+		
+		synchronized(players){
+			for (Session session: players.keySet()) {	
+				if (ignoring.contains(session)) {
+					continue;
+				}
+				if (session.isOpen()) {
+					try {
+						session.getBasicRemote().sendText(payload.toJSON().toString());
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 				}
 			}
 		}
