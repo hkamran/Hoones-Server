@@ -55,13 +55,24 @@ public class GameServer {
 			players.put(session, player);
 			log.info(String.format("Player %S connected on session %S", i + 1, session.getId()));
 	
-	
+			//Send player id to the user
 			Payload payload = new Payload();
 			payload.type = Payload.Type.PLAYER;
 			payload.data = player;
 			send(session, payload);		
+			
 			break;
 			
+		}
+		
+		for (int i = 0; i < room.length; i++) {
+			if (room[i] == null)  continue;
+			
+			//Let everyone know someone connected
+			Payload payload = new Payload();
+			payload.type = Payload.Type.CONNECTED;
+			payload.data = players.get(room[i]);
+			broadcast(payload);			
 		}
 		
 		host = null;
@@ -73,6 +84,8 @@ public class GameServer {
 			}
 		}
 		
+		
+		
 		if (players.size() > 1) {
 			synchonize();
 		}
@@ -80,14 +93,21 @@ public class GameServer {
 	
 	@OnClose
 	public void onWebSocketClose(Session session) {
+		Player player = players.get(session);
+		Payload payload = new Payload();
+		payload.type = Payload.Type.DISCONNECTED;
+		payload.data = player;
+		broadcast(payload);
 		
 		for (int i = 0; i < room.length; i++) {
 			if (session == room[i]) {
 				log.info(String.format("Player %d disconnected on session %s ", i + 1, session.getId()));
+
 				room[i] = null;
 				break;
 			}
 		}
+		
 		players.remove(session);
 	}	
 	

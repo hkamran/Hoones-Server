@@ -12,7 +12,7 @@ public class Payload {
 	public Object data;
 	
 	public static enum Type {
-		GET, PUT, KEYS, PLAYER, STOP, PLAY, WAITING
+		GET, PUT, KEYS, PLAYER, STOP, PLAY, WAITING, CONNECTED, DISCONNECTED
 	}
 	
 	public static Payload STOP() {
@@ -26,12 +26,6 @@ public class Payload {
 		payload.type = Type.PLAY;
 		return payload;
 	}
-	
-	public static Payload SLOWDOWN() {
-		Payload payload = new Payload();
-		payload.type = Type.PLAY;
-		return payload;
-	}	
 	
 	public JSONObject toJSON() {
 		JSONObject json = new JSONObject();

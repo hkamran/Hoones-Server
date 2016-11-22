@@ -9,6 +9,7 @@ public class Player {
 	public Session session;
 	public int id;
 	public int cycle;
+	
 	public Status status;
 	public int count = 0;
 	
