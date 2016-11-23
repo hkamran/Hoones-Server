@@ -1,19 +1,17 @@
 package com.hkamran.hoones.server.servers;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
-import javax.servlet.ServletException;
 import javax.websocket.ClientEndpoint;
-import javax.websocket.DeploymentException;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
+import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 
 import org.apache.logging.log4j.LogManager;
@@ -34,153 +32,109 @@ import com.hkamran.hoones.server.payloads.Keys;
 import com.hkamran.hoones.server.payloads.Player;
 
 @ClientEndpoint
-@ServerEndpoint(value = "/")
+@ServerEndpoint(value = "/{roomnumber}")
 public class GameServer {
 
 	private final static Logger log = LogManager.getLogger(GameServer.class);
 
-	// Server Properties
-	Server server;
-	int port;
-
-	// Game Properties
-	public static final int SIZE = 2;
-	public Player host;
-	public Session[] slots = new Session[SIZE];
-	public Map<Session, Player> players = new HashMap<Session, Player>();
-	public Status status = Status.PLAYING;
-
-	public long lastMessage = System.currentTimeMillis();
-
-	public static enum Status {
-		SYNCING, WAITING, PLAYING
-	}
-
 	@OnOpen
-	public void OnWebSocketConnect(Session session) {
-
+	public void OnWebSocketConnect(Session session, @PathParam("roomnumber") final Integer roomnumber) {
 		session.setMaxIdleTimeout(600000);
 
-		for (int i = 0; i < slots.length; i++) {
-			if (slots[i] != null)
-				continue;
-
-			slots[i] = session;
-			Player player = new Player(session, i + 1);
-			players.put(session, player);
-			log.info(String.format("Player %S connected on session %S", i + 1, session.getId()));
-
-			// Send player id to the user
-			Payload payload = new Payload();
-			payload.type = Payload.Type.PLAYER;
-			payload.data = player;
-			send(session, payload);
-
-			break;
-
+		Room room = GameManager.getRoom(roomnumber);
+		
+		if (room.hasEmptySeat()) {
+			Integer id = room.getEmptySeat();
+			Player player = room.takeSeat(id, session);
+			
+			Payload payload = new Payload(Payload.Type.PLAYER, player);
+			send(session, payload);			
+		} else {
+			//TODO STOP IT
 		}
 
-		for (int i = 0; i < slots.length; i++) {
-			if (slots[i] == null)
-				continue;
-
-			// Let everyone know someone connected
-			Payload payload = new Payload();
-			payload.type = Payload.Type.CONNECTED;
-			payload.data = players.get(slots[i]);
-			broadcast(payload);
-		}
-
-		host = null;
-		for (int i = 0; i < slots.length; i++) {
-			if (slots[i] == null)
-				continue;
-			if (slots[i] != null) {
-				host = players.get(slots[i]);
-				break;
-			}
+		List<Player> players = room.getPlayers();
+		for (Player player : players){
+			Payload payload = new Payload(Payload.Type.CONNECTED, player);
+			broadcast(payload, room);
 		}
 
 		if (players.size() > 1) {
-			synchonize();
+			synchonize(roomnumber);
 		}
 	}
 
 	@OnClose
-	public void onWebSocketClose(Session session) {
-		Player player = players.get(session);
-		Payload payload = new Payload();
-		payload.type = Payload.Type.DISCONNECTED;
-		payload.data = player;
-		broadcast(payload);
-
-		for (int i = 0; i < slots.length; i++) {
-			if (session == slots[i]) {
-				log.info(String.format("Player %d disconnected on session %s ", i + 1, session.getId()));
-
-				slots[i] = null;
-				break;
-			}
+	public void onWebSocketClose(Session session, @PathParam("roomnumber") final Integer roomnumber) {
+		Room room = GameManager.getRoom(roomnumber);
+		
+		Player player = room.getPlayer(session);
+		if (player == null) {
+			return;
 		}
+	
+		Payload payload = new Payload(Payload.Type.DISCONNECTED, player);
+		broadcast(payload, room);
 
-		players.remove(session);
+		room.leaveSeat(session);
 	}
 
 	@OnMessage
-	public void onWebSocketText(String message, Session session) {
+	public void onWebSocketText(String message, Session session, @PathParam("roomnumber") final Integer roomnumber) {
+		Room room = GameManager.getRoom(roomnumber);
 		
-		lastMessage = System.currentTimeMillis();
+		room.lastMessage = System.currentTimeMillis();
 		
-		if (status == Status.SYNCING) {
-			if (host != null && host.session == session) {
+		if (room.status == Room.Status.SYNCING) {
+			Player host = room.getHost();
+			if (host != null) {
 				Payload payload = Payload.parseJSON(message);
 				if (payload.type == Payload.Type.GET) {
 					log.info("Broadcasting state of the host");
 					payload.type = Payload.Type.PUT;
-					broadcast(payload);
-					status = Status.WAITING;
+					broadcast(payload, room);
+					room.status = Room.Status.WAITING;
 				}
 			}
 			return;
 		}
 
-		if (status == Status.WAITING) {
+		if (room.status == Room.Status.WAITING) {
 			// Update player status
 			Payload payload = Payload.parseJSON(message);
 			if (payload.type == Payload.Type.WAITING) {
-				Player player = players.get(session);
+				Player player = room.getPlayer(session);
 				player.status = Player.Status.READY;
 			}
 
 			// Check if we are all READY!!
-			for (Session sess : players.keySet()) {
-				Player player = players.get(sess);
+			for (Session sess : room.players.keySet()) {
+				Player player = room.getPlayer(sess);
 				if (player.status == Player.Status.WAITING) {
 					return;
 				}
 			}
 
 			// Play
-			status = Status.PLAYING;
-			broadcast(Payload.PLAY());
+			room.status = Room.Status.PLAYING;
+			broadcast(Payload.PLAY(), room);
 			return;
 		}
 
-		if (status == Status.PLAYING) {
+		if (room.status == Room.Status.PLAYING) {
 			Payload payload = Payload.parseJSON(message);
 
 			if (payload.type == Payload.Type.KEYS) {
 				Keys controller = (Keys) payload.data;
-				log.info("Received Keys from " + controller.playerId + " at " + controller.cycle);
 
 				Payload resPayload = new Payload();
 				resPayload.type = Payload.Type.KEYS;
 				resPayload.data = controller;
 
-				broadcast(payload);
+				broadcast(payload, room);
 			} else if (payload.type == Payload.Type.PUT) {
 				log.info("Resynchronizing clients");
-				synchonize();
+				synchonize(roomnumber);
 			}
 		}
 
@@ -191,21 +145,22 @@ public class GameServer {
 		cause.printStackTrace(System.err);
 	}
 
-	public void synchonize() {
+	public void synchonize(int roomnumber) {
 		log.info("Synchronizing players...");
+		Room room = GameManager.getRoom(roomnumber);
+		
+		broadcast(Payload.STOP(), room);
+		room.status = Room.Status.SYNCING;
 
-		broadcast(Payload.STOP());
-		status = Status.SYNCING;
-
-		for (Session session : players.keySet()) {
-			Player player = players.get(session);
+		for (Session session : room.players.keySet()) {
+			Player player = room.players.get(session);
 			player.status = Player.Status.WAITING;
 		}
 
 		Payload payload = new Payload();
 		payload.type = Payload.Type.GET;
 
-		send(host.session, payload);
+		send(room.getHost().session, payload);
 	}
 
 	public void send(Session session, Payload payload) {
@@ -216,18 +171,9 @@ public class GameServer {
 		}
 	}
 
-	public void broadcast(Payload payload) {
-		Set<Session> ignoring = new HashSet<Session>();
-		broadcast(payload, ignoring);
-	}
-
-	public void broadcast(Payload payload, Set<Session> ignoring) {
-
-		synchronized (players) {
-			for (Session session : players.keySet()) {
-				if (ignoring.contains(session)) {
-					continue;
-				}
+	public void broadcast(Payload payload, Room room) {
+		synchronized (room.players) {
+			for (Session session : room.players.keySet()) {
 				if (session.isOpen()) {
 					try {
 						session.getBasicRemote().sendText(payload.toJSON().toString());
@@ -239,14 +185,9 @@ public class GameServer {
 		}
 	}
 
-	public Player getPlayer(Session session) {
-		return players.get(session);
-	}
 
-	public void start(Integer port) throws Exception {
+	public static Server create(Integer port) throws Exception {
 		log.info("Starting HTTP Server at " + port);
-
-		this.port = port;
 
 		// Set Jersey Classes
 		ResourceConfig config = new ResourceConfig();
@@ -254,11 +195,11 @@ public class GameServer {
 		s.add(GameServer.class);
 		config.registerClasses(s);
 
-		server = new Server(port);
+		Server server = new Server(port);
 
 		// Create WS
 		ServletHolder wsServlet = new ServletHolder(new DefaultServlet());
-		ServletContextHandler wsHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+		ServletContextHandler wsHandler = new ServletContextHandler(ServletContextHandler.SESSIONS);
 		wsHandler.setContextPath("/ws");
 		wsHandler.addServlet(wsServlet, "/*");
 
@@ -271,17 +212,7 @@ public class GameServer {
 		container.addEndpoint(GameServer.class);
 
 		server.start();
-	}
-
-	public void close() {
-		try {
-			server.stop();
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			server.destroy();
-		}
-
+		return server;
 	}
 
 }

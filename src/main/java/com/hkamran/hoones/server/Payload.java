@@ -11,6 +11,15 @@ public class Payload {
 	public Type type;
 	public Object data;
 	
+	public Payload(Type type, Object data) {
+		this.type = type;
+		this.data = data;
+	}
+	
+	public Payload() {
+		
+	}
+	
 	public static enum Type {
 		GET, PUT, KEYS, PLAYER, STOP, PLAY, WAITING, CONNECTED, DISCONNECTED
 	}

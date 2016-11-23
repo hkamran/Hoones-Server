@@ -6,8 +6,7 @@ public class Main {
 	public static void main(String[] args) throws Exception {
 //		GameServer server = new GameServer();
 //		server.start(8090);
-		
-		GameManager manager = new GameManager();
-		manager.getRoom();
+		GameManager.addRoomPorts(8091, 8092);
+		GameManager.start(8090);
 	}
 }
