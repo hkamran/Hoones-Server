@@ -44,6 +44,7 @@ public class GameServer {
 		
 		if (room == null) {
 			//does not exists
+			send(session, Payload.DESTROYED());
 			return;
 		}
 		
@@ -54,7 +55,8 @@ public class GameServer {
 			Payload payload = new Payload(Payload.Type.SERVER_PLAYERINFO, player);
 			send(session, payload);			
 		} else {
-			//TODO STOP IT
+			send(session, Payload.FULL());
+			return;
 		}
 
 		List<Player> players = room.getPlayers();
@@ -73,11 +75,13 @@ public class GameServer {
 		Room room = GameManager.getRoom(roomnumber);
 		
 		if (room == null) {
+			send(session, Payload.DESTROYED());
 			return;
 		}
 		
 		Player player = room.getPlayer(session);
 		if (player == null) {
+			send(session, Payload.DESTROYED());
 			return;
 		}
 	
@@ -92,6 +96,7 @@ public class GameServer {
 		Room room = GameManager.getRoom(roomnumber);
 		
 		if (room == null) {
+			send(session, Payload.DESTROYED());
 			return;
 		}
 		

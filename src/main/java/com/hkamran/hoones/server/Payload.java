@@ -26,6 +26,8 @@ public class Payload {
 		public static int SERVER_STOP = 2;
 		public static int SERVER_PLAY = 3;
 		public static int SERVER_WAIT = 4;
+		public static int SERVER_DESTROYED = 13;
+		public static int SERVER_FULL = 14;
 		
 		public static int SERVER_PLAYERINFO = 5;
 		public static int SERVER_PLAYERKEYS = 6;
@@ -44,6 +46,12 @@ public class Payload {
 		return payload;
 	}
 	
+	public static Payload FULL() {
+		Payload payload = new Payload();
+		payload.type = Type.SERVER_FULL;
+		return payload;		
+	}
+	
 	public static Payload PLAY() {
 		Payload payload = new Payload();
 		payload.type = Type.SERVER_PLAY;
@@ -53,6 +61,12 @@ public class Payload {
 	public static Payload WAIT() {
 		Payload payload = new Payload();
 		payload.type = Type.SERVER_WAIT;
+		return payload;
+	}
+	
+	public static Payload DESTROYED() {
+		Payload payload = new Payload();
+		payload.type = Type.SERVER_DESTROYED;
 		return payload;
 	}
 	
