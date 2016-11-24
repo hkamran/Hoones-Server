@@ -21,18 +21,28 @@ public class Payload {
 	}
 	
 	public static enum Type {
-		GET, PUT, KEYS, PLAYER, STOP, PLAY, WAITING, CONNECTED, DISCONNECTED
+		SERVER_GETSTATE, SERVER_PUTSTATE, SERVER_STOP, SERVER_PLAY, SERVER_WAIT,
+		
+		SERVER_PLAYERINFO,SERVER_PLAYERKEYS, SERVER_PLAYERCONNECTED, SERVER_PLAYERDISCONNECTED,
+		
+		PLAYER_KEYS, PLAYER_WAITING, PLAYER_SYNC, PLAYER_SENDSTATE
 	}
 	
 	public static Payload STOP() {
 		Payload payload = new Payload();
-		payload.type = Type.STOP;
+		payload.type = Type.SERVER_STOP;
 		return payload;
 	}
 	
 	public static Payload PLAY() {
 		Payload payload = new Payload();
-		payload.type = Type.PLAY;
+		payload.type = Type.SERVER_PLAY;
+		return payload;
+	}
+	
+	public static Payload WAIT() {
+		Payload payload = new Payload();
+		payload.type = Type.SERVER_WAIT;
 		return payload;
 	}
 	
@@ -59,15 +69,15 @@ public class Payload {
 		
 		
 		JSONObject jsonObj = json.getJSONObject("data");
-		if (type == Type.KEYS) {
+		if (type == Type.PLAYER_KEYS) {
 			Keys keyStroke = Keys.parseJSON(jsonObj);
 			result = keyStroke;
-		} else if (type == Type.PLAYER) {
-			Player player = Player.parseJSON(jsonObj);
-			result = player;
-		} else if (type == Type.GET) {
+		} else if (type == Type.PLAYER_SENDSTATE) {
 			State state = State.parseJSON(jsonObj);
 			result = state;
+		} else if (type == Type.PLAYER_WAITING) {
+		} else {
+			throw new RuntimeException("Recieved unknown payload type " + type);
 		}
 		
 		Payload payload = new Payload();

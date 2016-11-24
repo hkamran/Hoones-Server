@@ -28,7 +28,6 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONException;
 
 import com.hkamran.hoones.server.Payload;
-import com.hkamran.hoones.server.payloads.Keys;
 import com.hkamran.hoones.server.payloads.Player;
 
 @ClientEndpoint
@@ -52,7 +51,7 @@ public class GameServer {
 			Integer id = room.getEmptySeat();
 			Player player = room.takeSeat(id, session);
 			
-			Payload payload = new Payload(Payload.Type.PLAYER, player);
+			Payload payload = new Payload(Payload.Type.SERVER_PLAYERINFO, player);
 			send(session, payload);			
 		} else {
 			//TODO STOP IT
@@ -60,7 +59,7 @@ public class GameServer {
 
 		List<Player> players = room.getPlayers();
 		for (Player player : players){
-			Payload payload = new Payload(Payload.Type.CONNECTED, player);
+			Payload payload = new Payload(Payload.Type.SERVER_PLAYERCONNECTED, player);
 			broadcast(payload, room);
 		}
 
@@ -82,7 +81,7 @@ public class GameServer {
 			return;
 		}
 	
-		Payload payload = new Payload(Payload.Type.DISCONNECTED, player);
+		Payload payload = new Payload(Payload.Type.SERVER_PLAYERDISCONNECTED, player);
 		broadcast(payload, room);
 
 		room.leaveSeat(session);
@@ -102,9 +101,9 @@ public class GameServer {
 			Player host = room.getHost();
 			if (host != null) {
 				Payload payload = Payload.parseJSON(message);
-				if (payload.type == Payload.Type.GET) {
+				if (payload.type == Payload.Type.PLAYER_SENDSTATE) {
 					log.info("Broadcasting state of the host");
-					payload.type = Payload.Type.PUT;
+					payload.type = Payload.Type.SERVER_PUTSTATE;
 					broadcast(payload, room);
 					room.status = Room.Status.WAITING;
 				}
@@ -115,7 +114,7 @@ public class GameServer {
 		if (room.status == Room.Status.WAITING) {
 			// Update player status
 			Payload payload = Payload.parseJSON(message);
-			if (payload.type == Payload.Type.WAITING) {
+			if (payload.type == Payload.Type.PLAYER_WAITING) {
 				Player player = room.getPlayer(session);
 				player.status = Player.Status.READY;
 			}
@@ -137,15 +136,10 @@ public class GameServer {
 		if (room.status == Room.Status.PLAYING) {
 			Payload payload = Payload.parseJSON(message);
 
-			if (payload.type == Payload.Type.KEYS) {
-				Keys controller = (Keys) payload.data;
-
-				Payload resPayload = new Payload();
-				resPayload.type = Payload.Type.KEYS;
-				resPayload.data = controller;
-
+			if (payload.type == Payload.Type.PLAYER_KEYS) {
+				payload.type = Payload.Type.SERVER_PLAYERKEYS;
 				broadcast(payload, room);
-			} else if (payload.type == Payload.Type.PUT) {
+			} else if (payload.type == Payload.Type.PLAYER_SYNC) {
 				log.info("Resynchronizing clients");
 				synchonize(roomnumber);
 			}
@@ -171,7 +165,7 @@ public class GameServer {
 		}
 
 		Payload payload = new Payload();
-		payload.type = Payload.Type.GET;
+		payload.type = Payload.Type.SERVER_GETSTATE;
 
 		send(room.getHost().session, payload);
 	}
