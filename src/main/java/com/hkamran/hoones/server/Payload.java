@@ -8,10 +8,10 @@ import com.hkamran.hoones.server.payloads.State;
 
 public class Payload {
 
-	public Type type;
+	public Integer type;
 	public Object data;
 	
-	public Payload(Type type, Object data) {
+	public Payload(Integer type, Object data) {
 		this.type = type;
 		this.data = data;
 	}
@@ -20,12 +20,22 @@ public class Payload {
 		
 	}
 	
-	public static enum Type {
-		SERVER_GETSTATE, SERVER_PUTSTATE, SERVER_STOP, SERVER_PLAY, SERVER_WAIT,
+	public static class Type {
+		public static int SERVER_GETSTATE = 0;
+		public static int SERVER_PUTSTATE = 1;
+		public static int SERVER_STOP = 2;
+		public static int SERVER_PLAY = 3;
+		public static int SERVER_WAIT = 4;
 		
-		SERVER_PLAYERINFO,SERVER_PLAYERKEYS, SERVER_PLAYERCONNECTED, SERVER_PLAYERDISCONNECTED,
+		public static int SERVER_PLAYERINFO = 5;
+		public static int SERVER_PLAYERKEYS = 6;
+		public static int SERVER_PLAYERCONNECTED = 7; 
+		public static int SERVER_PLAYERDISCONNECTED = 8;
 		
-		PLAYER_KEYS, PLAYER_WAITING, PLAYER_SYNC, PLAYER_SENDSTATE
+		public static int PLAYER_KEYS = 9;
+		public static int PLAYER_WAITING = 10;
+		public static int PLAYER_SYNC = 11;
+		public static int PLAYER_SENDSTATE = 12;
 	}
 	
 	public static Payload STOP() {
@@ -48,7 +58,7 @@ public class Payload {
 	
 	public JSONObject toJSON() {
 		JSONObject json = new JSONObject();
-		json.put("type", type.toString());
+		json.put("type", type);
 		
 		if (data instanceof Keys) {
 			json.put("data", ((Keys) data).toJSON());
@@ -64,7 +74,7 @@ public class Payload {
 	public static Payload parseJSON(String str) {
 		JSONObject json = new JSONObject(str);
 		
-		Type type = Type.valueOf(json.getString("type"));
+		Integer type = json.getInt("type");
 		Object result = null;
 		
 		
