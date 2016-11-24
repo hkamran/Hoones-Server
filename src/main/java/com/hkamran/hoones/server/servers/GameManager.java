@@ -29,7 +29,7 @@ public class GameManager {
 
 	private final static Logger log = LogManager.getLogger(GameManager.class);
 	
-	private static final long MAXAGE = 10000;
+	private static final long MAXAGE = 1000;
 
 	private static Map<Integer, Room> rooms = new HashMap<Integer, Room>();
 	private static List<Integer> availablePorts = new ArrayList<Integer>();
@@ -42,13 +42,17 @@ public class GameManager {
 	@Path("/createRoom")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public Response createRoom() {
+		clearOldServers();
+		
 		if (availablePorts.size() == 0) {
 			JSONObject json = new JSONObject();
 			json.put("error", "no available rooms");	
-			return Response.status(200).type(MediaType.APPLICATION_JSON).entity(json.toString(2)).build();
+			return Response.status(200).type(MediaType.APPLICATION_JSON)
+					.header("Access-Control-Allow-Origin", "*")
+					.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
+					.entity(json.toString(2)).build();
 		}
-
-		clearOldServers();
+		
 		int port = availablePorts.remove(availablePorts.size() - 1);
 		
 		try {
@@ -57,14 +61,20 @@ public class GameManager {
 			JSONObject json = new JSONObject();
 			json.put("id", room.id);
 			json.put("port", port);
-			return Response.status(200).type(MediaType.APPLICATION_JSON).entity(json.toString(2)).build();
+			return Response.status(200).type(MediaType.APPLICATION_JSON)
+					.header("Access-Control-Allow-Origin", "*")
+					.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
+					.entity(json.toString(2)).build();
 			
 		} catch (Exception e) {
 			
 			availablePorts.add(port);
 			JSONObject json = new JSONObject();
 			json.put("error", "cannot start server");	
-			return Response.status(200).type(MediaType.APPLICATION_JSON).entity(json.toString(2)).build();
+			return Response.status(200).type(MediaType.APPLICATION_JSON)
+					.header("Access-Control-Allow-Origin", "*")
+					.header("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
+					.entity(json.toString(2)).build();
 		}
 	}
 
@@ -82,14 +92,13 @@ public class GameManager {
 
 		for (Integer id : oldServers) {
 			Room room = rooms.get(id);
-			System.out.println("ODDDD");
 			availablePorts.add(room.port);
 			rooms.remove(id);
 		}
 	}
 	
 	
-	public static void addRoomPorts(int... ports) {
+	public static void addAvailablePorts(int... ports) {
 		for (int port : ports) {
 			GameManager.availablePorts.add(port);
 		}

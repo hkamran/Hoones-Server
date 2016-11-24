@@ -43,6 +43,11 @@ public class GameServer {
 
 		Room room = GameManager.getRoom(roomnumber);
 		
+		if (room == null) {
+			//does not exists
+			return;
+		}
+		
 		if (room.hasEmptySeat()) {
 			Integer id = room.getEmptySeat();
 			Player player = room.takeSeat(id, session);
@@ -68,6 +73,10 @@ public class GameServer {
 	public void onWebSocketClose(Session session, @PathParam("roomnumber") final Integer roomnumber) {
 		Room room = GameManager.getRoom(roomnumber);
 		
+		if (room == null) {
+			return;
+		}
+		
 		Player player = room.getPlayer(session);
 		if (player == null) {
 			return;
@@ -82,6 +91,10 @@ public class GameServer {
 	@OnMessage
 	public void onWebSocketText(String message, Session session, @PathParam("roomnumber") final Integer roomnumber) {
 		Room room = GameManager.getRoom(roomnumber);
+		
+		if (room == null) {
+			return;
+		}
 		
 		room.lastMessage = System.currentTimeMillis();
 		
