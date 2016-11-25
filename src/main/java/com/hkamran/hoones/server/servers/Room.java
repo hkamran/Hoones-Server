@@ -108,12 +108,6 @@ public class Room {
 	public void destroy() {
 		log.info("Destroying room " + id + " on " + port);
 		
-		for (Session session : players.keySet()) {
-			if (session.isOpen()) {
-				GameServer.send(session, Payload.DESTROYED());
-			}
-		}
-		
 		try {
 			server.stop();
 		} catch (Exception e) {

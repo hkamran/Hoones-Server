@@ -1,6 +1,7 @@
 package com.hkamran.hoones.server.servers;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -92,10 +93,7 @@ public class GameServer {
 			}
 		}
 	
-		Payload payload = new Payload(Payload.Type.SERVER_PLAYERDISCONNECTED, player);
-		broadcast(payload, room);
-
-		room.leaveSeat(session);
+		handleClientDisconnect(room, session);
 	}
 
 	@OnMessage
@@ -162,9 +160,7 @@ public class GameServer {
 	@OnError
 	public void onWebSocketError(Session session, Throwable cause) {
 		Room room = GameManager.getRoom(session);
-		if (room != null) {
-			room.leaveSeat(session);
-		}
+		handleClientDisconnect(room, session);
 		cause.printStackTrace(System.err);
 	}
 
@@ -186,40 +182,63 @@ public class GameServer {
 		send(room, room.getHost().session, payload);
 	}
 
-	public static void send(Session session, Payload payload) {
+	public void send(Session session, Payload payload) {
 		send(null, session, payload);
 	}
 	
-	public static void send(Room room, Session session, Payload payload) {
+	public void send(Room room, Session session, Payload payload) {
 		try {
 			if (session.isOpen()) {
 				session.getBasicRemote().sendText(payload.toJSON().toString(2));
-			} else {
-				if (room != null) {
-					room.leaveSeat(session);
-				}
-			}
+				return;
+			} 
 		} catch (JSONException | IOException e) {
 			e.printStackTrace();
 		}
+		handleClientDisconnect(room, session);
 	}
-
+	
 	public void broadcast(Payload payload, Room room) {
 		synchronized (room.players) {
+			List<Session> staleSessions = new ArrayList<Session>();
+			
 			for (Session session : room.players.keySet()) {
 				if (session.isOpen()) {
 					try {
-						session.getBasicRemote().sendText(payload.toJSON().toString());
-					} catch (IOException e) {
+						session.getBasicRemote().sendText(payload.toJSON().toString(2));
+					} catch (JSONException | IOException e) {
 						e.printStackTrace();
+						staleSessions.add(session);
 					}
-				} else {
-					room.leaveSeat(session);
-				}
+				} 
+			}
+			
+			for (Session session : staleSessions) {
+				handleClientDisconnect(room, session);
 			}
 		}
 	}
-
+	
+	public void handleClientDisconnect(Room room, Session session) {
+		if (room == null) {
+			return;
+		}
+		System.err.println("HANDLING DICONNECT");
+		for (Player player : room.getPlayers()) {
+			Session current = player.session;
+			if (current.isOpen() && current != session) {
+				try {
+					if (session.isOpen()) {
+						session.getBasicRemote().sendText(Payload.DESTROYED().toJSON().toString(2));
+					} 
+				} catch (JSONException | IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		room.leaveSeat(session);
+	}
 
 	public static Server create(Integer port) throws Exception {
 		log.info("Starting HTTP Server at " + port);
