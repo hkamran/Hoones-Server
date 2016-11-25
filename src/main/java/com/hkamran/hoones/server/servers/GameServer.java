@@ -65,6 +65,9 @@ public class GameServer {
 			broadcast(payload, room);
 		}
 
+		Payload payload = Payload.STOP();
+		broadcast(payload, room);
+		
 		if (players.size() > 1) {
 			synchonize(roomnumber);
 		}

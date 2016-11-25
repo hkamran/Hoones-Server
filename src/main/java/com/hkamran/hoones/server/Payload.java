@@ -25,7 +25,6 @@ public class Payload {
 		public static int SERVER_PUTSTATE = 1;
 		public static int SERVER_STOP = 2;
 		public static int SERVER_PLAY = 3;
-		public static int SERVER_WAIT = 4;
 		public static int SERVER_DESTROYED = 13;
 		public static int SERVER_FULL = 14;
 		
@@ -55,12 +54,6 @@ public class Payload {
 	public static Payload PLAY() {
 		Payload payload = new Payload();
 		payload.type = Type.SERVER_PLAY;
-		return payload;
-	}
-	
-	public static Payload WAIT() {
-		Payload payload = new Payload();
-		payload.type = Type.SERVER_WAIT;
 		return payload;
 	}
 	
