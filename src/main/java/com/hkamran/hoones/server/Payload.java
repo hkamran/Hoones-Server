@@ -93,6 +93,7 @@ public class Payload {
 			State state = State.parseJSON(jsonObj);
 			result = state;
 		} else if (type == Type.PLAYER_WAITING) {
+		} else if (type == Type.PLAYER_SYNC) {
 		} else {
 			throw new RuntimeException("Recieved unknown payload type " + type);
 		}

@@ -78,14 +78,18 @@ public class GameServer {
 		Room room = GameManager.getRoom(roomnumber);
 		
 		if (room == null) {
-			send(session, Payload.DESTROYED());
+			if (session.isOpen()) {
+				send(session, Payload.DESTROYED());
+			}
 			return;
 		}
 		
 		Player player = room.getPlayer(session);
 		if (player == null) {
-			send(session, Payload.DESTROYED());
-			return;
+			if (session.isOpen()) {
+				send(session, Payload.DESTROYED());
+				return;
+			}
 		}
 	
 		Payload payload = new Payload(Payload.Type.SERVER_PLAYERDISCONNECTED, player);
