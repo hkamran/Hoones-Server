@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.websocket.Session;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -29,7 +30,7 @@ public class GameManager {
 
 	private final static Logger log = LogManager.getLogger(GameManager.class);
 	
-	private static final long MAXAGE = 1000;
+	private static final long MAXAGE = 10000;
 
 	private static Map<Integer, Room> rooms = new HashMap<Integer, Room>();
 	private static List<Integer> availablePorts = new ArrayList<Integer>();
@@ -37,7 +38,26 @@ public class GameManager {
 	public static Room getRoom(Integer id) {
 		return rooms.get(id);
 	}
+	
+	public static List<Room> getRooms() {
+		List<Room> list = new ArrayList<Room>();
+		for (Integer id : rooms.keySet()) {
+			list.add(rooms.get(id));
+		}
+		return list;
+	}
+	
+	public static Room getRoom(Session session) {
+		List<Room> rooms = getRooms();
+		for (Room room : rooms) {
+			if (room.getPlayer(session) != null) {
+				return room;
+			}
+		}
+		return null;
+	}
 
+	
 	@GET
 	@Path("/createRoom")
 	@Produces({ MediaType.APPLICATION_JSON })
@@ -79,6 +99,11 @@ public class GameManager {
 	}
 
 	private static void clearOldServers() {
+		//If we can still make servers
+		if (availablePorts.size() != 0) {
+			return;
+		}
+		
 		// Remove old game servers
 		List<Integer> oldServers = new ArrayList<Integer>();
 		long currentMillis = System.currentTimeMillis();

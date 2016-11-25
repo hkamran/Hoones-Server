@@ -1,5 +1,6 @@
 package com.hkamran.hoones.server.servers;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 
+import com.hkamran.hoones.server.Payload;
 import com.hkamran.hoones.server.payloads.Player;
 
 public class Room {
@@ -79,7 +81,6 @@ public class Room {
 	}
 	
 	public void leaveSeat(Session session) {
-
 		for (int i = 0; i < seats.length; i++) {
 			Player player = seats[i];
 			if (player.session == session) {
@@ -106,6 +107,13 @@ public class Room {
 	
 	public void destroy() {
 		log.info("Destroying room " + id + " on " + port);
+		
+		for (Session session : players.keySet()) {
+			if (session.isOpen()) {
+				GameServer.send(session, Payload.DESTROYED());
+			}
+		}
+		
 		try {
 			server.stop();
 		} catch (Exception e) {

@@ -53,7 +53,7 @@ public class GameServer {
 			Player player = room.takeSeat(id, session);
 			
 			Payload payload = new Payload(Payload.Type.SERVER_PLAYERINFO, player);
-			send(session, payload);			
+			send(room, session, payload);			
 		} else {
 			send(session, Payload.FULL());
 			return;
@@ -160,7 +160,11 @@ public class GameServer {
 	}
 
 	@OnError
-	public void onWebSocketError(Throwable cause) {
+	public void onWebSocketError(Session session, Throwable cause) {
+		Room room = GameManager.getRoom(session);
+		if (room != null) {
+			room.leaveSeat(session);
+		}
 		cause.printStackTrace(System.err);
 	}
 
@@ -179,12 +183,22 @@ public class GameServer {
 		Payload payload = new Payload();
 		payload.type = Payload.Type.SERVER_GETSTATE;
 
-		send(room.getHost().session, payload);
+		send(room, room.getHost().session, payload);
 	}
 
-	public void send(Session session, Payload payload) {
+	public static void send(Session session, Payload payload) {
+		send(null, session, payload);
+	}
+	
+	public static void send(Room room, Session session, Payload payload) {
 		try {
-			session.getBasicRemote().sendText(payload.toJSON().toString(2));
+			if (session.isOpen()) {
+				session.getBasicRemote().sendText(payload.toJSON().toString(2));
+			} else {
+				if (room != null) {
+					room.leaveSeat(session);
+				}
+			}
 		} catch (JSONException | IOException e) {
 			e.printStackTrace();
 		}
@@ -199,6 +213,8 @@ public class GameServer {
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
+				} else {
+					room.leaveSeat(session);
 				}
 			}
 		}
