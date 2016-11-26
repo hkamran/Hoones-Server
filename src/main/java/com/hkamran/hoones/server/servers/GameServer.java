@@ -202,11 +202,13 @@ public class GameServer {
 		synchronized (room.players) {
 			List<Session> staleSessions = new ArrayList<Session>();
 			
-			for (Session session : room.players.keySet()) {
+			List<Player> players = room.getPlayers();
+			for (Player player : players) {
+				Session session = player.session;
 				if (session.isOpen()) {
 					try {
 						session.getBasicRemote().sendText(payload.toJSON().toString(2));
-					} catch (JSONException | IOException e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 						staleSessions.add(session);
 					}

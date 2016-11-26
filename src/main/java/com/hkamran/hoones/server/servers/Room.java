@@ -83,7 +83,7 @@ public class Room {
 	public void leaveSeat(Session session) {
 		for (int i = 0; i < seats.length; i++) {
 			Player player = seats[i];
-			if (player.session == session) {
+			if (player != null && player.session == session) {
 				seats[i] = null;
 				log.info(String.format("Player %S disconnected on game %S on port %S", player.id, id, port));
 				break;
