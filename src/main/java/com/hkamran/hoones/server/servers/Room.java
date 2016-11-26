@@ -11,6 +11,7 @@ import javax.websocket.Session;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
+import org.json.JSONException;
 
 import com.hkamran.hoones.server.Payload;
 import com.hkamran.hoones.server.payloads.Player;
@@ -107,6 +108,18 @@ public class Room {
 	
 	public void destroy() {
 		log.info("Destroying room " + id + " on " + port);
+		
+		List<Player> players = getPlayers();
+		for (Player player : players) {
+			Session session = player.session;
+			if (session.isOpen()) {
+				try {
+					session.getBasicRemote().sendText(Payload.DESTROYED().toJSON().toString(2));
+				} catch (JSONException | IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}		
 		
 		try {
 			server.stop();
