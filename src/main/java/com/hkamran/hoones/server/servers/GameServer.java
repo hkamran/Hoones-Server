@@ -223,14 +223,14 @@ public class GameServer {
 		if (room == null) {
 			return;
 		}
-		System.err.println("HANDLING DICONNECT");
+
+		Player left = room.getPlayer(session);		
 		for (Player player : room.getPlayers()) {
 			Session current = player.session;
-			if (current.isOpen() && current != session) {
+			if (current.isOpen()) {
 				try {
-					if (session.isOpen()) {
-						session.getBasicRemote().sendText(Payload.DESTROYED().toJSON().toString(2));
-					} 
+					Payload payload = new Payload(Payload.Type.SERVER_PLAYERDISCONNECTED, left);
+					current.getBasicRemote().sendText(payload.toJSON().toString(2));
 				} catch (JSONException | IOException e) {
 					e.printStackTrace();
 				}
