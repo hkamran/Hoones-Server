@@ -3,8 +3,10 @@ package com.hkamran.hoones.server.servers;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import javax.websocket.Session;
 
@@ -35,6 +37,7 @@ public class Room {
 	public long lastMessage = System.currentTimeMillis();
 	
 	public Room(int port) throws Exception {
+		players = new HashMap<Session, Player>();
 		this.server = GameServer.create(port);
 		this.id = ((Integer) this.server.hashCode());
 		this.port = port;
@@ -46,7 +49,11 @@ public class Room {
 		if (result == -1) {
 			return false;
 		}
+
+		Queue<Character> queue = new LinkedList<Character>();
+		LinkedList<Character> test = (LinkedList<Character>) queue;
 		return true;
+		
 	}
 	
 	public int getEmptySeat() {
@@ -108,7 +115,8 @@ public class Room {
 	
 	public void destroy() {
 		log.info("Destroying room " + id + " on " + port);
-		
+
+		players = new HashMap<Session, Player>();
 		List<Player> players = getPlayers();
 		for (Player player : players) {
 			Session session = player.session;
