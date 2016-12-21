@@ -140,6 +140,7 @@ public class GameServer {
 			// Play
 			room.status = Room.Status.PLAYING;
 			broadcast(Payload.PLAY(), room);
+			log.info("Game " + this.hashCode() + " is now playing!");
 			return;
 		}
 
