@@ -2,11 +2,6 @@
 
 This project is the multiplayer component for the Hoones project.
 
-## Components
-
-* Restful Server 
-* WebSocket Server
-
 ## High-Level Design
 
 The emulator before every frame will wait for all player key states given to it, and then performs a render. After
@@ -17,6 +12,11 @@ requirement to wait for all key states before rendering. Most of the delay is ca
 
 A player must first send a REST request to create a room. The player(s) then join the room via WebSocket and follows the 
 state flow given from the WebSocket.
+
+## Components
+
+* Restful Server 
+* WebSocket Server
 
 ## Requirements
 
