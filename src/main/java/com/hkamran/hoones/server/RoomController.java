@@ -1,4 +1,4 @@
-package com.hkamran.hoones.server.servers;
+package com.hkamran.hoones.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,9 +26,9 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.json.JSONObject;
 
 @Path("/")
-public class GameManager {
+public class RoomController {
 
-	private final static Logger log = LogManager.getLogger(GameManager.class);
+	private final static Logger log = LogManager.getLogger(RoomController.class);
 	
 	private static final long MAXAGE = 10000;
 
@@ -125,18 +125,18 @@ public class GameManager {
 	
 	public static void addAvailablePorts(int... ports) {
 		for (int port : ports) {
-			GameManager.availablePorts.add(port);
+			RoomController.availablePorts.add(port);
 		}
 	}	
 
 	public static void start(Integer port) {
 
-		log.info("Game Manager started at " + port);
+		log.info("REST: Room Controller started at " + port);
 		
 		// Set Jersey Classes
 		ResourceConfig config = new ResourceConfig();
 		Set<Class<?>> s = new HashSet<Class<?>>();
-		s.add(GameManager.class);
+		s.add(RoomController.class);
 		config.registerClasses(s);
 
 		Server server = new Server(port);

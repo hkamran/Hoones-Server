@@ -1,12 +1,10 @@
-package com.hkamran.hoones.server.servers;
+package com.hkamran.hoones.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
 import javax.websocket.Session;
 
@@ -14,9 +12,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import org.json.JSONException;
+import org.json.JSONObject;
 
-import com.hkamran.hoones.server.Payload;
-import com.hkamran.hoones.server.payloads.Player;
+import com.hkamran.hoones.server.dos.Player;
+import com.hkamran.hoones.server.dtos.factories.PacketFactory;
+import com.hkamran.hoones.server.dtos.mappers.PacketMapper;
 
 public class Room {
 	
@@ -38,7 +38,7 @@ public class Room {
 	
 	public Room(int port) throws Exception {
 		players = new HashMap<Session, Player>();
-		this.server = GameServer.create(port);
+		this.server = RoomSocket.create(port);
 		this.id = ((Integer) this.server.hashCode());
 		this.port = port;
 		log.info("Create game room " + id + " on " + port);
@@ -49,9 +49,6 @@ public class Room {
 		if (result == -1) {
 			return false;
 		}
-
-		Queue<Character> queue = new LinkedList<Character>();
-		LinkedList<Character> test = (LinkedList<Character>) queue;
 		return true;
 		
 	}
@@ -122,9 +119,10 @@ public class Room {
 			Session session = player.session;
 			if (session.isOpen()) {
 				try {
-					session.getBasicRemote().sendText(Payload.DESTROYED().toJSON().toString(2));
+					JSONObject json = PacketMapper.toJSON(PacketFactory.DESTROYED());
+					session.getBasicRemote().sendText(json.toString(2));
 				} catch (JSONException | IOException e) {
-					e.printStackTrace();
+					log.error(e);
 				}
 			}
 		}		
@@ -132,7 +130,7 @@ public class Room {
 		try {
 			server.stop();
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error(e);
 		} finally {
 			server.destroy();
 		}
