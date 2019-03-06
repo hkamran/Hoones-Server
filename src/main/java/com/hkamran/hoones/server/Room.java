@@ -19,8 +19,8 @@ import com.hkamran.hoones.server.dtos.factories.PacketFactory;
 import com.hkamran.hoones.server.dtos.mappers.PacketMapper;
 
 public class Room {
-	
-	private final static Logger log = LogManager.getLogger(Room.class);
+
+	private final static Logger LOGGER = LogManager.getLogger(Room.class);
 	
 	public static enum Status { SYNCING, WAITING, PLAYING };
 	public static final int SIZE = 2;
@@ -41,7 +41,7 @@ public class Room {
 		this.server = RoomSocket.create(port);
 		this.id = ((Integer) this.server.hashCode());
 		this.port = port;
-		log.info("Create game room " + id + " on " + port);
+		LOGGER.info("Create game room " + id + " on " + port);
 	}
 	
 	public boolean hasEmptySeat() {
@@ -70,7 +70,7 @@ public class Room {
 		Player player = new Player(session, index + 1);
 		seats[index] = player;
 		players.put(session, player);
-		log.info(String.format("Player %S connected on game %S on port %S", player.id, id, port));
+		LOGGER.info(String.format("Player %S connected on game %S on port %S", player.id, id, port));
 
 		return player;
 	}
@@ -90,7 +90,7 @@ public class Room {
 			Player player = seats[i];
 			if (player != null && player.session == session) {
 				seats[i] = null;
-				log.info(String.format("Player %S disconnected on game %S on port %S", player.id, id, port));
+				LOGGER.info(String.format("Player %S disconnected on game %S on port %S", player.id, id, port));
 				break;
 			}
 		}
@@ -111,7 +111,7 @@ public class Room {
 	}
 	
 	public void destroy() {
-		log.info("Destroying room " + id + " on " + port);
+		LOGGER.info("Destroying room " + id + " on " + port);
 
 		players = new HashMap<Session, Player>();
 		List<Player> players = getPlayers();
@@ -122,7 +122,7 @@ public class Room {
 					JSONObject json = PacketMapper.toJSON(PacketFactory.DESTROYED());
 					session.getBasicRemote().sendText(json.toString(2));
 				} catch (JSONException | IOException e) {
-					log.error(e);
+					LOGGER.error(e);
 				}
 			}
 		}		
@@ -130,7 +130,7 @@ public class Room {
 		try {
 			server.stop();
 		} catch (Exception e) {
-			log.error(e);
+			LOGGER.error(e);
 		} finally {
 			server.destroy();
 		}

@@ -38,13 +38,13 @@ import com.hkamran.hoones.server.dtos.mappers.PacketMapper;
 @ServerEndpoint(value = "/{roomnumber}")
 public class RoomSocket {
 
-	private final static Logger log = LogManager.getLogger(RoomSocket.class);
+	private final static Logger LOGGER = LogManager.getLogger(RoomSocket.class);
 
 	@OnOpen
 	public void OnWebSocketConnect(Session session, @PathParam("roomnumber") final Integer roomnumber) {
 		session.setMaxIdleTimeout(600000);
 
-		Room room = RoomController.getRoom(roomnumber);
+		Room room = RoomManager.getRoom(roomnumber);
 		
 		if (room == null) {
 			//does not exists
@@ -79,7 +79,7 @@ public class RoomSocket {
 
 	@OnClose
 	public void onWebSocketClose(Session session, @PathParam("roomnumber") final Integer roomnumber) {
-		Room room = RoomController.getRoom(roomnumber);
+		Room room = RoomManager.getRoom(roomnumber);
 		
 		if (room == null) {
 			if (session.isOpen()) {
@@ -101,7 +101,7 @@ public class RoomSocket {
 
 	@OnMessage
 	public void onWebSocketText(String message, Session session, @PathParam("roomnumber") final Integer roomnumber) {
-		Room room = RoomController.getRoom(roomnumber);
+		Room room = RoomManager.getRoom(roomnumber);
 		
 		if (room == null) {
 			send(session, PacketFactory.DESTROYED());
@@ -115,7 +115,7 @@ public class RoomSocket {
 			if (host != null) {
 				Packet payload = PacketMapper.toPacket(message);
 				if (payload.type == Packet.Type.PLAYER_SENDSTATE) {
-					log.info("Broadcasting state of the host");
+					LOGGER.info("Broadcasting state of the host");
 					payload.type = Packet.Type.SERVER_PUTSTATE;
 					broadcast(payload, room);
 					room.status = Room.Status.WAITING;
@@ -143,7 +143,7 @@ public class RoomSocket {
 			// Play
 			room.status = Room.Status.PLAYING;
 			broadcast(PacketFactory.PLAY(), room);
-			log.info("Game " + this.hashCode() + " is now playing!");
+			LOGGER.info("Game " + this.hashCode() + " is now playing!");
 			return;
 		}
 
@@ -154,7 +154,7 @@ public class RoomSocket {
 				payload.type = Packet.Type.SERVER_PLAYERKEYS;
 				broadcast(payload, room);
 			} else if (payload.type == Packet.Type.PLAYER_SYNC) {
-				log.info("Resynchronizing clients");
+				LOGGER.info("Resynchronizing clients");
 				synchonize(roomnumber);
 			}
 		}
@@ -163,14 +163,14 @@ public class RoomSocket {
 
 	@OnError
 	public void onWebSocketError(Session session, Throwable cause) {
-		Room room = RoomController.getRoom(session);
+		Room room = RoomManager.getRoom(session);
 		handleClientDisconnect(room, session);
 		cause.printStackTrace(System.err);
 	}
 
 	public void synchonize(int roomnumber) {
-		Room room = RoomController.getRoom(roomnumber);
-		log.info("Synchronizing players in room " + room.id);
+		Room room = RoomManager.getRoom(roomnumber);
+		LOGGER.info("Synchronizing players in room " + room.id);
 		
 		broadcast(PacketFactory.STOP(), room);
 		room.status = Room.Status.SYNCING;
@@ -237,7 +237,7 @@ public class RoomSocket {
 					Packet payload = new Packet(Packet.Type.SERVER_PLAYERDISCONNECTED, left);
 					current.getBasicRemote().sendText(PacketMapper.toJSON(payload).toString(2));
 				} catch (JSONException | IOException e) {
-					e.printStackTrace();
+					LOGGER.error(e);
 				}
 			}
 		}
@@ -246,7 +246,7 @@ public class RoomSocket {
 	}
 
 	public static Server create(Integer port) throws Exception {
-		log.info("Starting HTTP (Websocket) server at " + port);
+		LOGGER.info("Starting HTTP (Websocket) server at " + port);
 
 		// Set Jersey Classes
 		ResourceConfig config = new ResourceConfig();

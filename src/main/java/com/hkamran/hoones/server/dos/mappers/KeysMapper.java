@@ -27,7 +27,6 @@ public class KeysMapper {
 			
 			return keyStroke;
 		} catch (JSONException e) {
-			System.out.println(json.toString(2));
 			throw e;
 		}
 	}

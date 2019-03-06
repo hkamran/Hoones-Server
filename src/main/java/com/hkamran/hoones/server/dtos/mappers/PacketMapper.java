@@ -33,8 +33,8 @@ public class PacketMapper {
 		return json;
 	}
 	
-	public static Packet toPacket(String str) {
-		JSONObject json = new JSONObject(str);
+	public static Packet toPacket(String payloadStr) {
+		JSONObject json = new JSONObject(payloadStr);
 		
 		Integer type = json.getInt(TYPE);
 		Object result = null;
@@ -50,7 +50,7 @@ public class PacketMapper {
 		} else if (type == Packet.Type.PLAYER_WAITING) {
 		} else if (type == Packet.Type.PLAYER_SYNC) {
 		} else {
-			throw new RuntimeException("Received unknown payload type " + type);
+			throw new RuntimeException("Received unknown payload " + payloadStr);
 		}
 		
 		Packet payload = new Packet(type, result);

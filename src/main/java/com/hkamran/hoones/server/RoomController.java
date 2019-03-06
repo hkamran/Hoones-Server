@@ -1,13 +1,10 @@
 package com.hkamran.hoones.server;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import javax.websocket.Session;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -28,36 +25,12 @@ import org.json.JSONObject;
 @Path("/")
 public class RoomController {
 
-	private final static Logger log = LogManager.getLogger(RoomController.class);
+	private final static Logger LOGGER = LogManager.getLogger(RoomController.class);
 	
 	private static final long MAXAGE = 10000;
 
-	private static Map<Integer, Room> rooms = new HashMap<Integer, Room>();
 	private static List<Integer> availablePorts = new ArrayList<Integer>();
 
-	public static Room getRoom(Integer id) {
-		return rooms.get(id);
-	}
-	
-	public static List<Room> getRooms() {
-		List<Room> list = new ArrayList<Room>();
-		for (Integer id : rooms.keySet()) {
-			list.add(rooms.get(id));
-		}
-		return list;
-	}
-	
-	public static Room getRoom(Session session) {
-		List<Room> rooms = getRooms();
-		for (Room room : rooms) {
-			if (room.getPlayer(session) != null) {
-				return room;
-			}
-		}
-		return null;
-	}
-
-	
 	@GET
 	@Path("/createRoom")
 	@Produces({ MediaType.APPLICATION_JSON })
@@ -77,7 +50,8 @@ public class RoomController {
 		
 		try {
 			Room room = new Room(port);
-			rooms.put(room.id, room);
+			RoomManager.addRoom(room.id, room);
+			
 			JSONObject json = new JSONObject();
 			json.put("id", room.id);
 			json.put("port", port);
@@ -87,6 +61,7 @@ public class RoomController {
 					.entity(json.toString(2)).build();
 			
 		} catch (Exception e) {
+			LOGGER.error(e);
 			
 			availablePorts.add(port);
 			JSONObject json = new JSONObject();
@@ -107,8 +82,8 @@ public class RoomController {
 		// Remove old game servers
 		List<Integer> oldServers = new ArrayList<Integer>();
 		long currentMillis = System.currentTimeMillis();
-		for (Integer id : rooms.keySet()) {
-			Room room = rooms.get(id);
+		for (Integer id : RoomManager.getIds()) {
+			Room room = RoomManager.getRoom(id);
 			if (currentMillis - room.lastMessage > MAXAGE) {
 				room.destroy();
 				oldServers.add(id);
@@ -116,9 +91,9 @@ public class RoomController {
 		}
 
 		for (Integer id : oldServers) {
-			Room room = rooms.get(id);
+			Room room = RoomManager.getRoom(id);
 			availablePorts.add(room.port);
-			rooms.remove(id);
+			RoomManager.removeRoom(id);
 		}
 	}
 	
@@ -130,8 +105,7 @@ public class RoomController {
 	}	
 
 	public static void start(Integer port) {
-
-		log.info("REST: Room Controller started at " + port);
+		LOGGER.info("REST: Room Controller started at " + port);
 		
 		// Set Jersey Classes
 		ResourceConfig config = new ResourceConfig();
@@ -155,7 +129,7 @@ public class RoomController {
 			server.start();
 			server.join();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error(e);
 		} finally {
 			server.destroy();
 		}
