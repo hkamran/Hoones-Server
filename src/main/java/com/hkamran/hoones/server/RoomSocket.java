@@ -30,9 +30,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.hkamran.hoones.server.dos.Player;
-import com.hkamran.hoones.server.dtos.Packet;
-import com.hkamran.hoones.server.dtos.factories.PacketFactory;
-import com.hkamran.hoones.server.dtos.mappers.PacketMapper;
+import com.hkamran.hoones.server.dtos.Payload;
+import com.hkamran.hoones.server.dtos.factories.PayloadFactory;
+import com.hkamran.hoones.server.dtos.mappers.PayloadMapper;
 
 @ClientEndpoint
 @ServerEndpoint(value = "/{roomnumber}")
@@ -48,7 +48,7 @@ public class RoomSocket {
 		
 		if (room == null) {
 			//does not exists
-			send(session, PacketFactory.DESTROYED());
+			send(session, PayloadFactory.DESTROYED());
 			return;
 		}
 		
@@ -56,20 +56,20 @@ public class RoomSocket {
 			Integer id = room.getEmptySeat();
 			Player player = room.takeSeat(id, session);
 			
-			Packet payload = new Packet(Packet.Type.SERVER_PLAYERINFO, player);
+			Payload payload = new Payload(Payload.Type.SERVER_PLAYERINFO, player);
 			send(room, session, payload);			
 		} else {
-			send(session, PacketFactory.FULL());
+			send(session, PayloadFactory.FULL());
 			return;
 		}
 
 		List<Player> players = room.getPlayers();
 		for (Player player : players){
-			Packet payload = new Packet(Packet.Type.SERVER_PLAYERCONNECTED, player);
+			Payload payload = new Payload(Payload.Type.SERVER_PLAYERCONNECTED, player);
 			broadcast(payload, room);
 		}
 
-		Packet payload = PacketFactory.STOP();
+		Payload payload = PayloadFactory.STOP();
 		broadcast(payload, room);
 		
 		if (players.size() > 1) {
@@ -83,7 +83,7 @@ public class RoomSocket {
 		
 		if (room == null) {
 			if (session.isOpen()) {
-				send(session, PacketFactory.DESTROYED());
+				send(session, PayloadFactory.DESTROYED());
 			}
 			return;
 		}
@@ -91,7 +91,7 @@ public class RoomSocket {
 		Player player = room.getPlayer(session);
 		if (player == null) {
 			if (session.isOpen()) {
-				send(session, PacketFactory.DESTROYED());
+				send(session, PayloadFactory.DESTROYED());
 				return;
 			}
 		}
@@ -104,7 +104,7 @@ public class RoomSocket {
 		Room room = RoomManager.getRoom(roomnumber);
 		
 		if (room == null) {
-			send(session, PacketFactory.DESTROYED());
+			send(session, PayloadFactory.DESTROYED());
 			return;
 		}
 		
@@ -113,10 +113,10 @@ public class RoomSocket {
 		if (room.status == Room.Status.SYNCING) {
 			Player host = room.getHost();
 			if (host != null) {
-				Packet payload = PacketMapper.toPacket(message);
-				if (payload.type == Packet.Type.PLAYER_SENDSTATE) {
+				Payload payload = PayloadMapper.toPacket(message);
+				if (payload.type == Payload.Type.PLAYER_SENDSTATE) {
 					LOGGER.info("Broadcasting state of the host");
-					payload.type = Packet.Type.SERVER_PUTSTATE;
+					payload.type = Payload.Type.SERVER_PUTSTATE;
 					broadcast(payload, room);
 					room.status = Room.Status.WAITING;
 				}
@@ -126,8 +126,8 @@ public class RoomSocket {
 
 		if (room.status == Room.Status.WAITING) {
 			// Update player status
-			Packet payload = PacketMapper.toPacket(message);
-			if (payload.type == Packet.Type.PLAYER_WAITING) {
+			Payload payload = PayloadMapper.toPacket(message);
+			if (payload.type == Payload.Type.PLAYER_WAITING) {
 				Player player = room.getPlayer(session);
 				player.status = Player.Status.READY;
 			}
@@ -142,18 +142,18 @@ public class RoomSocket {
 
 			// Play
 			room.status = Room.Status.PLAYING;
-			broadcast(PacketFactory.PLAY(), room);
+			broadcast(PayloadFactory.PLAY(), room);
 			LOGGER.info("Game " + this.hashCode() + " is now playing!");
 			return;
 		}
 
 		if (room.status == Room.Status.PLAYING) {
-			Packet payload = PacketMapper.toPacket(message);
+			Payload payload = PayloadMapper.toPacket(message);
 
-			if (payload.type == Packet.Type.PLAYER_KEYS) {
-				payload.type = Packet.Type.SERVER_PLAYERKEYS;
+			if (payload.type == Payload.Type.PLAYER_KEYS) {
+				payload.type = Payload.Type.SERVER_PLAYERKEYS;
 				broadcast(payload, room);
-			} else if (payload.type == Packet.Type.PLAYER_SYNC) {
+			} else if (payload.type == Payload.Type.PLAYER_SYNC) {
 				LOGGER.info("Resynchronizing clients");
 				synchonize(roomnumber);
 			}
@@ -172,7 +172,7 @@ public class RoomSocket {
 		Room room = RoomManager.getRoom(roomnumber);
 		LOGGER.info("Synchronizing players in room " + room.id);
 		
-		broadcast(PacketFactory.STOP(), room);
+		broadcast(PayloadFactory.STOP(), room);
 		room.status = Room.Status.SYNCING;
 
 		for (Session session : room.players.keySet()) {
@@ -180,17 +180,17 @@ public class RoomSocket {
 			player.status = Player.Status.WAITING;
 		}
 
-		send(room, room.getHost().session, PacketFactory.GETSTATE());
+		send(room, room.getHost().session, PayloadFactory.GETSTATE());
 	}
 
-	public void send(Session session, Packet payload) {
+	public void send(Session session, Payload payload) {
 		send(null, session, payload);
 	}
 	
-	public void send(Room room, Session session, Packet payload) {
+	public void send(Room room, Session session, Payload payload) {
 		try {
 			if (session.isOpen()) {
-				JSONObject json = PacketMapper.toJSON(payload);
+				JSONObject json = PayloadMapper.toJSON(payload);
 				session.getBasicRemote().sendText(json.toString(2));
 				return;
 			} 
@@ -200,7 +200,7 @@ public class RoomSocket {
 		handleClientDisconnect(room, session);
 	}
 	
-	public void broadcast(Packet payload, Room room) {
+	public void broadcast(Payload payload, Room room) {
 		synchronized (room.players) {
 			List<Session> staleSessions = new ArrayList<Session>();
 			
@@ -209,7 +209,7 @@ public class RoomSocket {
 				Session session = player.session;
 				if (session.isOpen()) {
 					try {
-						JSONObject json = PacketMapper.toJSON(payload);
+						JSONObject json = PayloadMapper.toJSON(payload);
 						session.getBasicRemote().sendText(json.toString(2));
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -234,8 +234,8 @@ public class RoomSocket {
 			Session current = player.session;
 			if (current.isOpen()) {
 				try {
-					Packet payload = new Packet(Packet.Type.SERVER_PLAYERDISCONNECTED, left);
-					current.getBasicRemote().sendText(PacketMapper.toJSON(payload).toString(2));
+					Payload payload = new Payload(Payload.Type.SERVER_PLAYERDISCONNECTED, left);
+					current.getBasicRemote().sendText(PayloadMapper.toJSON(payload).toString(2));
 				} catch (JSONException | IOException e) {
 					LOGGER.error(e);
 				}

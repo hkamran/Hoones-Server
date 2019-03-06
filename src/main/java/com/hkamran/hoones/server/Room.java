@@ -15,8 +15,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.hkamran.hoones.server.dos.Player;
-import com.hkamran.hoones.server.dtos.factories.PacketFactory;
-import com.hkamran.hoones.server.dtos.mappers.PacketMapper;
+import com.hkamran.hoones.server.dtos.factories.PayloadFactory;
+import com.hkamran.hoones.server.dtos.mappers.PayloadMapper;
 
 public class Room {
 
@@ -119,7 +119,7 @@ public class Room {
 			Session session = player.session;
 			if (session.isOpen()) {
 				try {
-					JSONObject json = PacketMapper.toJSON(PacketFactory.DESTROYED());
+					JSONObject json = PayloadMapper.toJSON(PayloadFactory.DESTROYED());
 					session.getBasicRemote().sendText(json.toString(2));
 				} catch (JSONException | IOException e) {
 					LOGGER.error(e);

@@ -8,32 +8,32 @@ import com.hkamran.hoones.server.dos.State;
 import com.hkamran.hoones.server.dos.mappers.KeysMapper;
 import com.hkamran.hoones.server.dos.mappers.PlayerMapper;
 import com.hkamran.hoones.server.dos.mappers.StateMapper;
-import com.hkamran.hoones.server.dtos.Packet;
+import com.hkamran.hoones.server.dtos.Payload;
 
-public class PacketMapper {
+public class PayloadMapper {
 
 	private static final String TYPE = "type";
 	private static final String DATA = "data";
 
-	public static JSONObject toJSON(Packet packet) {
+	public static JSONObject toJSON(Payload payload) {
 		JSONObject json = new JSONObject();
-		json.put(TYPE, packet.type);
+		json.put(TYPE, payload.type);
 		
-		if (packet.data instanceof Keys) {
-			Keys keys = (Keys) packet.data;
+		if (payload.data instanceof Keys) {
+			Keys keys = (Keys) payload.data;
 			json.put(DATA, KeysMapper.toJSONObject(keys));
-		} else if (packet.data instanceof Player) {
-			Player player = (Player) packet.data;
+		} else if (payload.data instanceof Player) {
+			Player player = (Player) payload.data;
 			json.put(DATA, PlayerMapper.toJSONObject(player));
-		} else if (packet.data instanceof State) {
-			State state = (State) packet.data;
+		} else if (payload.data instanceof State) {
+			State state = (State) payload.data;
 			json.put(DATA, StateMapper.toJSONObject(state));
 		}
 		
 		return json;
 	}
 	
-	public static Packet toPacket(String payloadStr) {
+	public static Payload toPacket(String payloadStr) {
 		JSONObject json = new JSONObject(payloadStr);
 		
 		Integer type = json.getInt(TYPE);
@@ -41,19 +41,19 @@ public class PacketMapper {
 		
 		
 		JSONObject jsonObj = json.getJSONObject(DATA);
-		if (type == Packet.Type.PLAYER_KEYS) {
+		if (type == Payload.Type.PLAYER_KEYS) {
 			Keys keyStroke = KeysMapper.toKeys(jsonObj);
 			result = keyStroke;
-		} else if (type == Packet.Type.PLAYER_SENDSTATE) {
+		} else if (type == Payload.Type.PLAYER_SENDSTATE) {
 			State state = StateMapper.toState(jsonObj);
 			result = state;
-		} else if (type == Packet.Type.PLAYER_WAITING) {
-		} else if (type == Packet.Type.PLAYER_SYNC) {
+		} else if (type == Payload.Type.PLAYER_WAITING) {
+		} else if (type == Payload.Type.PLAYER_SYNC) {
 		} else {
 			throw new RuntimeException("Received unknown payload " + payloadStr);
 		}
 		
-		Packet payload = new Packet(type, result);
+		Payload payload = new Payload(type, result);
 		
 		return payload;
 	}

@@ -1,16 +1,16 @@
 package com.hkamran.hoones.server.dtos;
 
-public class Packet {
+public class Payload {
 	
 	public Integer type;
 	public Object data;
 	
-	public Packet(Integer type, Object dataObject) {
+	public Payload(Integer type, Object dataObject) {
 		this.type = type;
 		this.data = dataObject;
 	}
 	
-	public Packet(Integer type) {
+	public Payload(Integer type) {
 		this.type = type;
 	}
 
