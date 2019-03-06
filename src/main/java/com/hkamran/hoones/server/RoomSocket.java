@@ -73,7 +73,7 @@ public class RoomSocket {
 		broadcast(payload, room);
 		
 		if (players.size() > 1) {
-			synchonize(roomnumber);
+			synchronize(roomnumber);
 		}
 	}
 
@@ -155,7 +155,7 @@ public class RoomSocket {
 				broadcast(payload, room);
 			} else if (payload.type == Payload.Type.PLAYER_SYNC) {
 				LOGGER.info("Resynchronizing clients");
-				synchonize(roomnumber);
+				synchronize(roomnumber);
 			}
 		}
 
@@ -168,7 +168,7 @@ public class RoomSocket {
 		cause.printStackTrace(System.err);
 	}
 
-	public void synchonize(int roomnumber) {
+	public void synchronize(int roomnumber) {
 		Room room = RoomManager.getRoom(roomnumber);
 		LOGGER.info("Synchronizing players in room " + room.id);
 		
