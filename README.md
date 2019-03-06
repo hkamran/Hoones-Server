@@ -1,4 +1,4 @@
-# Hoones Netplay
+# Hoones-Server
 
 This project is the multiplayer component for the Hoones project.
 
