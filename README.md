@@ -4,7 +4,7 @@ This project is the multiplayer component for the Hoones project.
 
 ## High-Level Design
 
-The emulator before every frame will wait to get all player key states, and then performs a render. After
+The emulator before every frame will wait to get all player key states, and then sends a request for each party to performs a render. After
 which will re-perform this logic. This in no way "hides" delays between players and the server, since there is a mandatory
 requirement to wait for all key states before rendering. Most of the delay is caused from sending and waiting for key states (plus TCP overhead). One benefit for this design is that it greatly simplifies the synchronization logic, since we ensure at every frame all players are rendering with the same input, and our only concern is with the initial synchronization.
 
